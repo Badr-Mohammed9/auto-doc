@@ -227,7 +227,10 @@
     <div class="container">
         <aside class="sidebar">
             <div class="logo">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 1 1 3-3h7z"></path>
+                </svg>
                 <span>{{ config('app.name', 'Auto Doc') }}</span>
             </div>
             <nav>
@@ -236,53 +239,64 @@
                         <li class="nav-section">{{ $section['name'] }}</li>
                         @foreach($section['subsections'] as $subsection)
                             <li class="nav-subsection">
-                                <a href="#{{ strtolower(str_replace(' ', '-', $subsection['name'])) }}">{{ $subsection['name'] }}</a>
+                                <a href="#" data-title="{{ $subsection['name'] }}"
+                                   data-content="{{ json_encode($subsection['content']) }}"
+                                   data-uml="{{ json_encode($subsection['uml']) }}"
+                                   data-relationships="{{ json_encode($subsection['relationships']) }}">
+                                   {{ $subsection['name'] }}
+                                </a>
                             </li>
                         @endforeach
                     @endforeach
                 </ul>
             </nav>
-            
         </aside>
+
         <main class="main-content">
             <header class="header">
                 <div class="search-bar">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
                     <input type="search" placeholder="Search documentation...">
                 </div>
                 <button class="user-menu">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
                     <span class="sr-only">Toggle user menu</span>
                 </button>
             </header>
+
             <div class="content">
                 <div class="main-area">
-                    <h1>{{ $projectTitle }}</h1>
-                    <p class="content-description">{{ $projectDescription }}</p>
                     <div class="tabs">
-                        @foreach($tabs as $tab)
-                            <div class="tab {{ $loop->first ? 'active' : '' }}" data-tab="{{ $tab['id'] }}">{{ $tab['name'] }}</div>
-                        @endforeach
+                        <div class="tab active" data-tab="content">Content</div>
+                        <div class="tab" data-tab="uml">UML Diagrams</div>
+                        <div class="tab" data-tab="relationships">Relationships</div>
                     </div>
-                    @foreach($tabContents as $tabContent)
-                        <div class="tab-content {{ $loop->first ? 'active' : '' }}" id="{{ $tabContent['id'] }}">
-                            @foreach($tabContent['sections'] as $section)
-                                <div class="subsection">
-                                    <h3>{{ $section['title'] }}</h3>
-                                    <p>{{ $section['description'] }}</p>
-                                    <div class="code-example">
-                                        <pre><code>{{ $section['code'] }}</code></pre>
-                                    </div>
-                                </div>
-                            @endforeach
+                    <!-- Tab Content -->
+                    <div id="tab-content-area">
+                        <div class="tab-content" id="content">
+                            <!-- Initial content loaded here; can be updated dynamically -->
                         </div>
-                    @endforeach
+
+                        <div class="tab-content" id="uml" style="display: none;">
+                            <!-- UML content will be dynamically updated -->
+                        </div>
+
+                        <div class="tab-content" id="relationships" style="display: none;">
+                            <!-- Relationships content will be dynamically updated -->
+                        </div>
+                    </div>
                 </div>
                 <aside class="on-this-page">
                     <h4>On This Page</h4>
                     <ul>
                         @foreach($onThisPageSections as $section)
-                            <li><a href="#{{ strtolower(str_replace(' ', '-', $section)) }}">{{ $section }}</a></li>
+                            <li><a href="#">{{ $section }}</a></li>
                         @endforeach
                     </ul>
                 </aside>
@@ -291,14 +305,72 @@
     </div>
 
     <script>
+        // JavaScript for tab switching
         document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
+            tab.addEventListener('click', function () {
+                // Remove active class from all tabs and tab contents
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+
+                // Add active class to the clicked tab and show the related content
                 tab.classList.add('active');
-                document.getElementById(tab.dataset.tab).classList.add('active');
+                document.getElementById(tab.dataset.tab).style.display = 'block';
+            });
+        });
+
+        // JavaScript for dynamic subsection updates in "content", "uml", and "relationships" tabs
+        document.querySelectorAll('.nav-subsection a').forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                const title = this.dataset.title;
+                const contentData = JSON.parse(this.dataset.content);
+                const umlData = JSON.parse(this.dataset.uml);
+                const relationshipsData = JSON.parse(this.dataset.relationships);
+
+                // Update the main content area in the content tab
+                const contentTab = document.getElementById('content');
+                contentTab.innerHTML = contentData.map(item => `
+                    <div class="subsection">
+                        <h3>${item.title}</h3>
+                        <p>${item.description}</p>
+                        <div class="code-example">
+                            <pre><code>${item.code}</code></pre>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Update UML tab
+                const umlTab = document.getElementById('uml');
+                umlTab.innerHTML = umlData.map(item => `
+                    <div class="subsection">
+                        <h3>${item.title}</h3>
+                        <p>${item.description}</p>
+                        <div class="code-example">
+                            <pre><code>${item.code}</code></pre>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Update Relationships tab
+                const relationshipsTab = document.getElementById('relationships');
+                relationshipsTab.innerHTML = relationshipsData.map(item => `
+                    <div class="subsection">
+                        <h3>${item.title}</h3>
+                        <p>${item.description}</p>
+                        <div class="code-example">
+                            <pre><code>${item.code}</code></pre>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Switch to the content tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                document.querySelector('.tab[data-tab="content"]').classList.add('active');
+                contentTab.style.display = 'block';
             });
         });
     </script>
 </body>
+
 </html>
